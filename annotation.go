@@ -1,114 +1,37 @@
-package main
+package annotation
 
 import (
-	"bufio"
+	"embed"
 	"encoding/json"
-	"fmt"
-	"github.com/Nixson/annotation/method"
-	"go/doc"
-	"go/parser"
-	"go/token"
-	"io/fs"
-	"os"
-	"strings"
 )
 
-func main() {
-	Scan()
+type Annotation struct{}
+type Element struct {
+	Type       string            `json:"type"`
+	StructName string            `json:"structName"`
+	Parameters map[string]string `json:"parameters"`
+	Children   []Element         `json:"children"`
 }
 
-func Scan() {
+var annotation Annotation
+var embedFs embed.FS
 
-	fileSystem := os.DirFS(".")
-	dirs := make([]string, 0)
-	_ = fs.WalkDir(fileSystem, ".", func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() && path[0:1] != "." {
-			dirs = append(dirs, path)
-		}
-		return nil
-	})
-	annotations := make([]method.Element, 0)
-	for _, dir := range dirs {
-		d, err := parser.ParseDir(token.NewFileSet(), dir, nil, parser.ParseComments)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		for k, f := range d {
-			p := doc.New(f, k, 0)
-			for _, tp := range p.Types {
-				if tp.Doc != "" {
-					annotation := getAnnotation(tp.Name, tp.Doc)
-					if annotation.Type == "Controller" {
-						annotation.Children = make([]method.Element, 0)
-						for _, method := range tp.Methods {
-							if method.Doc != "" {
-								annotation.Children = append(annotation.Children, getAnnotation(method.Name, method.Doc))
-							}
-						}
-					}
-					annotations = append(annotations, annotation)
-				}
-			}
-		}
+var annotationMap map[string][]Element
 
+func InitAnnotation(emb embed.FS) *Annotation {
+	embedFs = emb
+	jsonFile, err := embedFs.ReadFile("resources/annotation.json")
+	if err != nil {
+		panic(err)
 	}
-	if len(annotations) > 0 {
-		annMap := make(map[string][]method.Element)
-		annMap["controller"] = get("Controller", annotations)
-		annMap["crud"] = get("CRUD", annotations)
-		annotation, _ := os.Create("resources/annotation.json")
-		writr := bufio.NewWriter(annotation)
-		b, err := json.Marshal(annMap)
-		if err == nil {
-			_, _ = writr.Write(b)
-			_ = writr.Flush()
-		}
+	err = json.Unmarshal(jsonFile, &annotationMap)
+	if err != nil {
+		panic(err)
 	}
+	annotation = Annotation{}
+	return &annotation
 }
 
-func get(s string, annotations []method.Element) []method.Element {
-	resp := make([]method.Element, 0)
-	for _, annotation := range annotations {
-		if annotation.Type == s {
-			resp = append(resp, annotation)
-		}
-	}
-	return resp
-}
-
-func getAnnotation(name string, in string) method.Element {
-	ann := method.Element{
-		StructName: name,
-	}
-	sep := strings.Split(in, "\n")
-	for _, str := range sep {
-		if strings.Contains(str, "@") {
-			titleApp := strings.Split(str, "@")
-			title := strings.TrimSpace(titleApp[1])
-			if strings.Contains(title, "(") {
-				strName := strings.Split(title, "(")
-				ann.Type = strName[0]
-				ann.Parameters = parseParams(strName[1])
-			} else {
-				ann.Type = title
-			}
-		}
-	}
-	return ann
-}
-
-func parseParams(s string) map[string]string {
-	paramsMap := make(map[string]string)
-	s = s[:len(s)-1]
-	sep := strings.Split(s, ",")
-	for _, substr := range sep {
-		substr = strings.TrimSpace(substr)
-		if !strings.Contains(substr, "=") {
-			continue
-		}
-		keyVal := strings.Split(substr, "=")
-		paramsMap[strings.TrimSpace(keyVal[0])] = strings.TrimSpace(keyVal[1])
-	}
-	return paramsMap
+func (a *Annotation) Get(name string) []Element {
+	return annotationMap[name]
 }

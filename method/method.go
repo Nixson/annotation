@@ -1,4 +1,4 @@
-package annotation
+package method
 
 import (
 	"embed"
@@ -6,6 +6,12 @@ import (
 )
 
 type Annotation struct{}
+type Element struct {
+	Type       string            `json:"type"`
+	StructName string            `json:"structName"`
+	Parameters map[string]string `json:"parameters"`
+	Children   []Element         `json:"children"`
+}
 
 var annotation Annotation
 var embedFs embed.FS

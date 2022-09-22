@@ -1,9 +1,10 @@
-package annotation
+package main
 
 import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/Nixson/annotation/method"
 	"go/doc"
 	"go/parser"
 	"go/token"
@@ -12,11 +13,8 @@ import (
 	"strings"
 )
 
-type Element struct {
-	Type       string            `json:"type"`
-	StructName string            `json:"structName"`
-	Parameters map[string]string `json:"parameters"`
-	Children   []Element         `json:"children"`
+func main() {
+	Scan()
 }
 
 func Scan() {
@@ -29,7 +27,7 @@ func Scan() {
 		}
 		return nil
 	})
-	annotations := make([]Element, 0)
+	annotations := make([]method.Element, 0)
 	for _, dir := range dirs {
 		d, err := parser.ParseDir(token.NewFileSet(), dir, nil, parser.ParseComments)
 		if err != nil {
@@ -42,7 +40,7 @@ func Scan() {
 				if tp.Doc != "" {
 					annotation := getAnnotation(tp.Name, tp.Doc)
 					if annotation.Type == "Controller" {
-						annotation.Children = make([]Element, 0)
+						annotation.Children = make([]method.Element, 0)
 						for _, method := range tp.Methods {
 							if method.Doc != "" {
 								annotation.Children = append(annotation.Children, getAnnotation(method.Name, method.Doc))
@@ -56,7 +54,7 @@ func Scan() {
 
 	}
 	if len(annotations) > 0 {
-		annMap := make(map[string][]Element)
+		annMap := make(map[string][]method.Element)
 		annMap["controller"] = get("Controller", annotations)
 		annMap["crud"] = get("CRUD", annotations)
 		annotation, _ := os.Create("resources/annotation.json")
@@ -69,8 +67,8 @@ func Scan() {
 	}
 }
 
-func get(s string, annotations []Element) []Element {
-	resp := make([]Element, 0)
+func get(s string, annotations []method.Element) []method.Element {
+	resp := make([]method.Element, 0)
 	for _, annotation := range annotations {
 		if annotation.Type == s {
 			resp = append(resp, annotation)
@@ -79,8 +77,8 @@ func get(s string, annotations []Element) []Element {
 	return resp
 }
 
-func getAnnotation(name string, in string) Element {
-	ann := Element{
+func getAnnotation(name string, in string) method.Element {
+	ann := method.Element{
 		StructName: name,
 	}
 	sep := strings.Split(in, "\n")

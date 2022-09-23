@@ -6,7 +6,6 @@ import (
 	"github.com/Nixson/environment"
 )
 
-type Annotation struct{}
 type Element struct {
 	Type       string            `json:"type"`
 	StructName string            `json:"structName"`
@@ -30,7 +29,7 @@ func InitAnnotation() {
 	}
 }
 
-func (a *Annotation) Get(name string) []Element {
+func Get(name string) []Element {
 	if annotationMap == nil {
 		InitAnnotation()
 	}

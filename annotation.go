@@ -14,12 +14,11 @@ type Element struct {
 	Children   []Element         `json:"children"`
 }
 
-var annotation Annotation
 var embedFs embed.FS
 
 var annotationMap map[string][]Element
 
-func InitAnnotation() *Annotation {
+func InitAnnotation() {
 	embedFs = environment.GetEnv().GetEmbed()
 	jsonFile, err := embedFs.ReadFile("resources/annotation.json")
 	if err != nil {
@@ -29,10 +28,11 @@ func InitAnnotation() *Annotation {
 	if err != nil {
 		panic(err)
 	}
-	annotation = Annotation{}
-	return &annotation
 }
 
 func (a *Annotation) Get(name string) []Element {
+	if annotationMap == nil {
+		InitAnnotation()
+	}
 	return annotationMap[name]
 }

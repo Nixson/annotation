@@ -3,6 +3,7 @@ package annotation
 import (
 	"embed"
 	"encoding/json"
+	"github.com/Nixson/environment"
 )
 
 type Annotation struct{}
@@ -18,8 +19,8 @@ var embedFs embed.FS
 
 var annotationMap map[string][]Element
 
-func InitAnnotation(emb embed.FS) *Annotation {
-	embedFs = emb
+func InitAnnotation() *Annotation {
+	embedFs = environment.GetEnv().GetEmbed()
 	jsonFile, err := embedFs.ReadFile("resources/annotation.json")
 	if err != nil {
 		panic(err)

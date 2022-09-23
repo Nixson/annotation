@@ -108,7 +108,7 @@ func parseParams(s string) map[string]string {
 			continue
 		}
 		keyVal := strings.Split(substr, "=")
-		paramsMap[strings.TrimSpace(keyVal[0])] = strings.Trim(`"`, strings.TrimSpace(keyVal[1]))
+		paramsMap[strings.TrimSpace(keyVal[0])] = strings.Trim(strings.TrimSpace(keyVal[1]), `"`)
 	}
 	return paramsMap
 }

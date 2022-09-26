@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-//go:embed tpl/*
+//go:embed tpl/*.goTpl
 var tpls embed.FS
 
 func main() {

@@ -5,6 +5,6 @@ import (
 	listener "${path}"
 )
 
-func Listen${name}() {
+func ${name}() {
 	kafka.Listen(listener.${method}, "${topic}", "${group}")
 }

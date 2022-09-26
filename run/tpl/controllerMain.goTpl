@@ -2,5 +2,4 @@ package controller
 
 func InitServer() {
     ${initList}
-	InitControllerHandle()
 }

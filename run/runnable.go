@@ -40,16 +40,15 @@ func Scan() map[string][]annotation.Element {
 			continue
 		}
 		for k, f := range d {
-			fmt.Println(f, k)
 			p := doc.New(f, k, 0)
 			for _, tp := range p.Types {
 				if tp.Doc != "" {
-					annotationE := getAnnotation(tp.Name, tp.Doc)
+					annotationE := getAnnotation(tp.Name, tp.Doc, k)
 					if annotationE.Type == "Controller" {
 						annotationE.Children = make([]annotation.Element, 0)
 						for _, method := range tp.Methods {
 							if method.Doc != "" {
-								annotationE.Children = append(annotationE.Children, getAnnotation(method.Name, method.Doc))
+								annotationE.Children = append(annotationE.Children, getAnnotation(method.Name, method.Doc, k))
 							}
 						}
 					}
@@ -86,9 +85,10 @@ func get(s string, annotations []annotation.Element) []annotation.Element {
 	return resp
 }
 
-func getAnnotation(name string, in string) annotation.Element {
+func getAnnotation(name, in, url string) annotation.Element {
 	ann := annotation.Element{
 		StructName: name,
+		Url:        url,
 	}
 	sep := strings.Split(in, "\n")
 	for _, str := range sep {
@@ -125,14 +125,88 @@ func parseParams(s string) map[string]string {
 var isVar = regexp.MustCompile(`\$\{(.*?)\}`)
 
 func generate(annotationMap map[string][]annotation.Element) {
+	modFile, err := os.ReadFile("go.mod")
+	if err != nil {
+		return
+	}
+	lines := strings.Split(string(modFile), "\n")
+	moduleNames := strings.Split(lines[0], " ")
+	moduleName := moduleNames[1]
 	controller, ok := annotationMap["controller"]
 	if ok {
-		//		list := make([]string, 0)
+		list := make([]string, 0)
 		fileTpl, _ := tpls.ReadFile("controller.goTpl")
-		find := isVar.FindStringSubmatch(string(fileTpl))
-		fmt.Println(find)
+		fileTplStr := string(fileTpl)
 		for _, element := range controller {
-			fmt.Println(element)
+			mapCont := make(map[string]string)
+			mapCont["path"] = moduleName + "/user/" + element.Url
+			mapCont["name"] = element.StructName
+			newFileContent := replace(fileTplStr, mapCont)
+			f, _ := os.Create("/gen/controller/" + strings.ToLower(element.StructName) + ".go")
+			_, _ = f.WriteString(newFileContent)
+			_ = f.Close()
+			list = append(list, "InitController"+element.StructName+"()")
+		}
+		fileMainTpl, _ := tpls.ReadFile("controllerMain.goTpl")
+		mapCont := make(map[string]string)
+		mapCont["initList"] = strings.Join(list, "\n\t")
+		newFileContent := replace(string(fileMainTpl), mapCont)
+		f, _ := os.Create("/gen/controller/main.go")
+		_, _ = f.WriteString(newFileContent)
+		_ = f.Close()
+	}
+	listener, ok := annotationMap["kafka"]
+	if ok {
+		list := make([]string, 0)
+		fileTpl, _ := tpls.ReadFile("kafka.goTpl")
+		fileTplStr := string(fileTpl)
+		for _, element := range listener {
+			mapCont := make(map[string]string)
+			mapCont["path"] = moduleName + "/user/" + element.Url
+			mapCont["name"] = element.StructName
+			mapCont["method"] = element.StructName
+			mapCont["topic"] = element.Parameters["topic"]
+			mapCont["group"] = element.Parameters["group"]
+			newFileContent := replace(fileTplStr, mapCont)
+			f, _ := os.Create("/gen/listener/" + strings.ToLower(element.StructName) + ".go")
+			_, _ = f.WriteString(newFileContent)
+			_ = f.Close()
+			list = append(list, element.StructName+"()")
+		}
+		fileMainTpl, _ := tpls.ReadFile("kafkaMain.goTpl")
+		mapCont := make(map[string]string)
+		mapCont["initList"] = strings.Join(list, "\n\t")
+		newFileContent := replace(string(fileMainTpl), mapCont)
+		f, _ := os.Create("/gen/listener/main.go")
+		_, _ = f.WriteString(newFileContent)
+		_ = f.Close()
+	}
+
+	repository, ok := annotationMap["crud"]
+	if ok {
+		fileTpl, _ := tpls.ReadFile("repository.goTpl")
+		fileTplStr := string(fileTpl)
+		for _, element := range repository {
+			mapCont := make(map[string]string)
+			mapCont["path"] = moduleName + "/user/" + element.Url
+			mapCont["name"] = element.StructName
+			mapCont["table"] = strings.ToLower(element.StructName)
+			tableName, ok := element.Parameters["table"]
+			if ok {
+				mapCont["table"] = tableName
+			}
+			mapCont["subname"] = strings.ToLower(element.StructName)
+			newFileContent := replace(fileTplStr, mapCont)
+			f, _ := os.Create("/gen/repository/" + strings.ToLower(element.StructName) + ".go")
+			_, _ = f.WriteString(newFileContent)
+			_ = f.Close()
 		}
 	}
+}
+
+func replace(content string, cont map[string]string) string {
+	for name, data := range cont {
+		content = strings.ReplaceAll(content, "${"+name+"}", data)
+	}
+	return content
 }

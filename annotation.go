@@ -7,6 +7,7 @@ import (
 )
 
 type Element struct {
+	Url        string            `json:"url"`
 	Type       string            `json:"type"`
 	StructName string            `json:"structName"`
 	Parameters map[string]string `json:"parameters"`

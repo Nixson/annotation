@@ -154,7 +154,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 			mapCont["path"] = moduleName + "/user/" + element.Url
 			mapCont["name"] = element.StructName
 			newFileContent := replace(fileTplStr, mapCont)
-			f, _ := os.Create("/gen/controller/" + strings.ToLower(element.StructName) + ".go")
+			f, _ := os.Create("gen/controller/" + strings.ToLower(element.StructName) + ".go")
 			_, _ = f.WriteString(newFileContent)
 			_ = f.Close()
 			list = append(list, "InitController"+element.StructName+"()")
@@ -164,7 +164,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 		mapCont := make(map[string]string)
 		mapCont["initList"] = strings.Join(list, "\n\t")
 		newFileContent := replace(string(fileMainTpl), mapCont)
-		f, _ := os.Create("/gen/controller/main.go")
+		f, _ := os.Create("gen/controller/main.go")
 		_, _ = f.WriteString(newFileContent)
 		_ = f.Close()
 	}
@@ -182,7 +182,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 			mapCont["topic"] = element.Parameters["topic"]
 			mapCont["group"] = element.Parameters["group"]
 			newFileContent := replace(fileTplStr, mapCont)
-			f, _ := os.Create("/gen/listener/" + strings.ToLower(element.StructName) + ".go")
+			f, _ := os.Create("gen/listener/" + strings.ToLower(element.StructName) + ".go")
 			_, _ = f.WriteString(newFileContent)
 			_ = f.Close()
 			list = append(list, element.StructName+"()")
@@ -192,7 +192,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 		mapCont := make(map[string]string)
 		mapCont["initList"] = strings.Join(list, "\n\t")
 		newFileContent := replace(string(fileMainTpl), mapCont)
-		f, _ := os.Create("/gen/listener/main.go")
+		f, _ := os.Create("gen/listener/main.go")
 		_, _ = f.WriteString(newFileContent)
 		_ = f.Close()
 	}
@@ -201,15 +201,15 @@ func generate(annotationMap map[string][]annotation.Element) {
 		envTpl, _ := tpls.ReadFile("tpl/env.goTpl")
 		mapCont := make(map[string]string)
 		if okCtr {
-			mapCont["controllerPath"] = `"` + moduleName + `/gen/controller"\n`
-			mapCont["controllerInit"] = `controller.InitServer()\n`
+			mapCont["controllerPath"] = `"` + moduleName + `/gen/controller"`
+			mapCont["controllerInit"] = `controller.InitServer()`
 		} else {
 			mapCont["controllerPath"] = ""
 			mapCont["controllerInit"] = ""
 		}
 		if okListener {
-			mapCont["listenerPath"] = `"` + moduleName + `/gen/listener"\n`
-			mapCont["listenerInit"] = `listener.InitKafka()\n`
+			mapCont["listenerPath"] = `"` + moduleName + `/gen/listener"`
+			mapCont["listenerInit"] = `listener.InitKafka()`
 		} else {
 			mapCont["listenerPath"] = ""
 			mapCont["listenerInit"] = ""
@@ -234,7 +234,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 			}
 			mapCont["subname"] = strings.ToLower(element.StructName)
 			newFileContent := replace(fileTplStr, mapCont)
-			f, _ := os.Create("/gen/repository/" + strings.ToLower(element.StructName) + ".go")
+			f, _ := os.Create("gen/repository/" + strings.ToLower(element.StructName) + ".go")
 			_, _ = f.WriteString(newFileContent)
 			_ = f.Close()
 			fmt.Println(element.StructName)

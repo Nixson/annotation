@@ -143,18 +143,9 @@ func generate(annotationMap map[string][]annotation.Element) {
 	moduleNames := strings.Split(lines[0], " ")
 	moduleName := moduleNames[1]
 	fmt.Println(moduleName)
-	{
-		envFile, _ := os.Create("gen/env.go")
-		envTpl, _ := tpls.ReadFile("tpl/env.goTpl")
-		mapCont := make(map[string]string)
-		mapCont["controllerPath"] = moduleName + "/gen/controller"
-		mapCont["listenerPath"] = moduleName + "/gen/listener"
-		envFile.WriteString(replace(string(envTpl), mapCont))
-		envFile.Close()
-	}
-
-	controller, ok := annotationMap["controller"]
-	if ok {
+	controller, okCtr := annotationMap["controller"]
+	if okCtr {
+		os.Mkdir("gen/controller", os.ModePerm)
 		list := make([]string, 0)
 		fileTpl, _ := tpls.ReadFile("controller.goTpl")
 		fileTplStr := string(fileTpl)
@@ -177,8 +168,9 @@ func generate(annotationMap map[string][]annotation.Element) {
 		_, _ = f.WriteString(newFileContent)
 		_ = f.Close()
 	}
-	listener, ok := annotationMap["kafka"]
-	if ok {
+	listener, okListener := annotationMap["kafka"]
+	if okListener {
+		os.Mkdir("gen/listener", os.ModePerm)
 		list := make([]string, 0)
 		fileTpl, _ := tpls.ReadFile("kafka.goTpl")
 		fileTplStr := string(fileTpl)
@@ -204,9 +196,31 @@ func generate(annotationMap map[string][]annotation.Element) {
 		_, _ = f.WriteString(newFileContent)
 		_ = f.Close()
 	}
+	{
+		envFile, _ := os.Create("gen/env.go")
+		envTpl, _ := tpls.ReadFile("tpl/env.goTpl")
+		mapCont := make(map[string]string)
+		if okCtr {
+			mapCont["controllerPath"] = `"` + moduleName + `/gen/controller"\n`
+			mapCont["controllerInit"] = `controller.InitServer()\n`
+		} else {
+			mapCont["controllerPath"] = ""
+			mapCont["controllerInit"] = ""
+		}
+		if okListener {
+			mapCont["listenerPath"] = `"` + moduleName + `/gen/listener"\n`
+			mapCont["listenerInit"] = `listener.InitKafka()\n`
+		} else {
+			mapCont["listenerPath"] = ""
+			mapCont["listenerInit"] = ""
+		}
+		envFile.WriteString(replace(string(envTpl), mapCont))
+		envFile.Close()
+	}
 
 	repository, ok := annotationMap["crud"]
 	if ok {
+		os.Mkdir("gen/repository", os.ModePerm)
 		fileTpl, _ := tpls.ReadFile("repository.goTpl")
 		fileTplStr := string(fileTpl)
 		for _, element := range repository {

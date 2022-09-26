@@ -125,6 +125,8 @@ func parseParams(s string) map[string]string {
 var isVar = regexp.MustCompile(`\$\{(.*?)\}`)
 
 func generate(annotationMap map[string][]annotation.Element) {
+	os.RemoveAll("gen")
+	os.Mkdir("gen", os.ModePerm)
 	modFile, err := os.ReadFile("go.mod")
 	if err != nil {
 		return
@@ -132,6 +134,17 @@ func generate(annotationMap map[string][]annotation.Element) {
 	lines := strings.Split(string(modFile), "\n")
 	moduleNames := strings.Split(lines[0], " ")
 	moduleName := moduleNames[1]
+	fmt.Println(moduleName)
+	{
+		envFile, _ := os.Create("gen/env.go")
+		envTpl, _ := tpls.ReadFile("tpl/env.goTpl")
+		mapCont := make(map[string]string)
+		mapCont["controllerPath"] = moduleName + "/gen/controller"
+		mapCont["listenerPath"] = moduleName + "/gen/listener"
+		envFile.WriteString(replace(string(envTpl), mapCont))
+		envFile.Close()
+	}
+
 	controller, ok := annotationMap["controller"]
 	if ok {
 		list := make([]string, 0)
@@ -146,6 +159,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 			_, _ = f.WriteString(newFileContent)
 			_ = f.Close()
 			list = append(list, "InitController"+element.StructName+"()")
+			fmt.Println("InitController" + element.StructName + "()")
 		}
 		fileMainTpl, _ := tpls.ReadFile("controllerMain.goTpl")
 		mapCont := make(map[string]string)
@@ -172,6 +186,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 			_, _ = f.WriteString(newFileContent)
 			_ = f.Close()
 			list = append(list, element.StructName+"()")
+			fmt.Println(element.StructName + "()")
 		}
 		fileMainTpl, _ := tpls.ReadFile("kafkaMain.goTpl")
 		mapCont := make(map[string]string)
@@ -200,6 +215,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 			f, _ := os.Create("/gen/repository/" + strings.ToLower(element.StructName) + ".go")
 			_, _ = f.WriteString(newFileContent)
 			_ = f.Close()
+			fmt.Println(element.StructName)
 		}
 	}
 }

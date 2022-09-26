@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"github.com/Nixson/annotation"
@@ -10,14 +11,18 @@ import (
 	"go/token"
 	"io/fs"
 	"os"
+	"regexp"
 	"strings"
 )
 
+//go:embed tpl/*
+var tpls embed.FS
+
 func main() {
-	Scan()
+	generate(Scan())
 }
 
-func Scan() {
+func Scan() map[string][]annotation.Element {
 
 	fileSystem := os.DirFS(".")
 	dirs := make([]string, 0)
@@ -35,6 +40,7 @@ func Scan() {
 			continue
 		}
 		for k, f := range d {
+			fmt.Println(f, k)
 			p := doc.New(f, k, 0)
 			for _, tp := range p.Types {
 				if tp.Doc != "" {
@@ -57,6 +63,7 @@ func Scan() {
 		annMap := make(map[string][]annotation.Element)
 		annMap["controller"] = get("Controller", annotations)
 		annMap["crud"] = get("CRUD", annotations)
+		annMap["kafka"] = get("KafkaListen", annotations)
 		annotationE, _ := os.Create("resources/annotation.json")
 		writr := bufio.NewWriter(annotationE)
 		b, err := json.Marshal(annMap)
@@ -64,7 +71,9 @@ func Scan() {
 			_, _ = writr.Write(b)
 			_ = writr.Flush()
 		}
+		return annMap
 	}
+	return nil
 }
 
 func get(s string, annotations []annotation.Element) []annotation.Element {
@@ -111,4 +120,19 @@ func parseParams(s string) map[string]string {
 		paramsMap[strings.TrimSpace(keyVal[0])] = strings.Trim(strings.TrimSpace(keyVal[1]), `"`)
 	}
 	return paramsMap
+}
+
+var isVar = regexp.MustCompile(`\$\{(.*?)\}`)
+
+func generate(annotationMap map[string][]annotation.Element) {
+	controller, ok := annotationMap["controller"]
+	if ok {
+		//		list := make([]string, 0)
+		fileTpl, _ := tpls.ReadFile("controller.goTpl")
+		find := isVar.FindStringSubmatch(string(fileTpl))
+		fmt.Println(find)
+		for _, element := range controller {
+			fmt.Println(element)
+		}
+	}
 }

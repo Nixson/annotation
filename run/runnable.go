@@ -147,7 +147,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 	if okCtr {
 		os.Mkdir("gen/controller", os.ModePerm)
 		list := make([]string, 0)
-		fileTpl, _ := tpls.ReadFile("controller.goTpl")
+		fileTpl, _ := tpls.ReadFile("tpl/controller.goTpl")
 		fileTplStr := string(fileTpl)
 		for _, element := range controller {
 			mapCont := make(map[string]string)
@@ -160,7 +160,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 			list = append(list, "InitController"+element.StructName+"()")
 			fmt.Println("InitController" + element.StructName + "()")
 		}
-		fileMainTpl, _ := tpls.ReadFile("controllerMain.goTpl")
+		fileMainTpl, _ := tpls.ReadFile("tpl/controllerMain.goTpl")
 		mapCont := make(map[string]string)
 		mapCont["initList"] = strings.Join(list, "\n\t")
 		newFileContent := replace(string(fileMainTpl), mapCont)
@@ -172,7 +172,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 	if okListener {
 		os.Mkdir("gen/listener", os.ModePerm)
 		list := make([]string, 0)
-		fileTpl, _ := tpls.ReadFile("kafka.goTpl")
+		fileTpl, _ := tpls.ReadFile("tpl/kafka.goTpl")
 		fileTplStr := string(fileTpl)
 		for _, element := range listener {
 			mapCont := make(map[string]string)
@@ -188,7 +188,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 			list = append(list, element.StructName+"()")
 			fmt.Println(element.StructName + "()")
 		}
-		fileMainTpl, _ := tpls.ReadFile("kafkaMain.goTpl")
+		fileMainTpl, _ := tpls.ReadFile("tpl/kafkaMain.goTpl")
 		mapCont := make(map[string]string)
 		mapCont["initList"] = strings.Join(list, "\n\t")
 		newFileContent := replace(string(fileMainTpl), mapCont)
@@ -221,7 +221,7 @@ func generate(annotationMap map[string][]annotation.Element) {
 	repository, ok := annotationMap["crud"]
 	if ok {
 		os.Mkdir("gen/repository", os.ModePerm)
-		fileTpl, _ := tpls.ReadFile("repository.goTpl")
+		fileTpl, _ := tpls.ReadFile("tpl/repository.goTpl")
 		fileTplStr := string(fileTpl)
 		for _, element := range repository {
 			mapCont := make(map[string]string)

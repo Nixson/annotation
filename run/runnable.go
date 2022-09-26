@@ -55,6 +55,14 @@ func Scan() map[string][]annotation.Element {
 					annotations = append(annotations, annotationE)
 				}
 			}
+			for _, tp := range p.Funcs {
+				if tp.Doc != "" {
+					annotationE := getAnnotation(tp.Name, tp.Doc, k)
+					if annotationE.Type == "KafkaListen" {
+						annotations = append(annotations, annotationE)
+					}
+				}
+			}
 		}
 
 	}
